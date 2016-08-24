@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/HockeyAppDemo.qml</file>
+        <file>qml/HockeyApp.qml</file>
+        <file>qml/LabelField.qml</file>
+        <file>qml/TabApp.qml</file>
+        <file>qml/TabDevice.qml</file>
+        <file>qml/TabCrash.qml</file>
+        <file>qml/TabFeedback.qml</file>
+        <file>qml/TabUpdates.qml</file>
+    </qresource>
+</RCC>
