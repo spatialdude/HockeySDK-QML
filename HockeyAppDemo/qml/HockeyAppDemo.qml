@@ -114,6 +114,9 @@ Window {
             TabDevice {
             }
 
+            TabEvent {
+            }
+
             TabCrash {
             }
 

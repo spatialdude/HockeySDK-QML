@@ -14,6 +14,7 @@ Being QML coders, you know how *Quick* and easy it is to build great looking use
 * Crash reporting
 * Feedback
 * Usage metrics
+* Custom events
 * Check for updates
 
 ## Getting Started
@@ -83,6 +84,18 @@ The **HockeyApp** component is designed to be used with minimal fuss, so many pr
 
 * Call the **startSession()** function at the point in you application the designates the start of a session. For example in the app's root QML component's **Component.onCompleted** signal handler.
 * The **userName** property should be set before calling **startSession()** to gather *User* metrics.
+
+#### Custom Events
+
+* **trackEvent(eventName)**
+
+    * *eventName* - [Further details](https://support.hockeyapp.net/kb/general-account-management-2/getting-started-with-custom-events-public-preview)
+
+e.g.
+
+```javascript
+hockeyApp.trackEvent("PhasersReady");
+```
 
 #### Crash Reporting
 

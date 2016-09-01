@@ -2,7 +2,7 @@ import QtQuick 2.5
 import QtQuick.Window 2.0
 
 Item {
-    property string sdkVersion: "QMLSDK (%1):1.0".arg(Qt.platform.os)
+    property string sdkVersion: "QMLSDK (%1):1.0.1".arg(Qt.platform.os)
 
     property string os: Qt.platform.os
     property string osName: Qt.platform.os
@@ -160,14 +160,82 @@ Item {
             return;
         }
 
+        var sessionData = createTelemetryData(
+                    "Microsoft.ApplicationInsights.SessionState",
+                    "SessionStateData",
+                    2);
+
+        sessionData.data.baseData.state = 0;
+
+        sendTelemetry(sessionData);
+    }
+
+    //--------------------------------------------------------------------------
+
+    function trackEvent(name, properties, measurements) {
+        if (!readyCheck(arguments.callee.name)) {
+            return;
+        }
+
+        if (!(name > "")) {
+            console.error("trackEvent: No name specified");
+            return;
+        }
+
+        var eventData = createTelemetryData(
+                    "Microsoft.ApplicationInsights.Event",
+                    "EventData",
+                    2);
+
+        var baseData = eventData.data.baseData;
+
+        baseData.name = name;
+
+        if (properties) {
+            baseData.properties = properties;
+        }
+
+        if (measurements) {
+            baseData.measurements = measurements;
+        }
+
+        sendTelemetry(eventData);
+    }
+
+    //--------------------------------------------------------------------------
+
+    function sendTelemetry(telemetryData) {
+        if (debug) {
+            console.log("sendTelemetry:", JSON.stringify(telemetryData, undefined, 2));
+        }
+
+        var request = new XMLHttpRequest();
+
+        request.onreadystatechange = function() {
+            if (request.readyState === XMLHttpRequest.DONE) {
+                if (debug) {
+                    console.log("sendTelemetry response:", request.responseText);
+                }
+            }
+        }
+
+        request.open("POST", trackUrl);
+        request.send(JSON.stringify(telemetryData));
+
+        return request;
+    }
+
+    //--------------------------------------------------------------------------
+
+    function createTelemetryData(envelopeTypeName, dataTypeName, dataVersion) {
         if (!(sessionId > "")) {
             sessionId = createUuid();
             console.log("Created sessionId:", sessionId);
         }
 
-        var body = {
+        var telemetryData = {
             "ver": 1,
-            "name": "Microsoft.ApplicationInsights.SessionState",
+            "name": envelopeTypeName,
             "time": new Date().toISOString(),
             "sampleRate": 100,
             "iKey": formatUuid(appId),
@@ -185,30 +253,23 @@ Item {
                 "ai.device.type": deviceType,
                 "ai.session.id": formatUuid(sessionId),
                 "ai.session.isFirst": sessionIsFirst.toString(),
-                "ai.session.isNew": sessionIsNew.toString(),
-                "ai.user.id": userEmail
+                "ai.session.isNew": sessionIsNew.toString()
             },
             "data": {
-                "baseType": "SessionStateData",
+                "baseType": dataTypeName,
                 "baseData": {
-                    "ver": 2,
-                    "state": 0
+                    "ver": dataVersion
                 }
             }
         };
 
-        var request = new XMLHttpRequest();
+        var tags = telemetryData.tags;
 
-        request.onreadystatechange = function() {
-            if (request.readyState === XMLHttpRequest.DONE) {
-                if (debug) {
-                    console.log("Session start response:", request.responseText);
-                }
-            }
+        if (userEmail > "") {
+            tags["ai.user.id"] = userEmail;
         }
 
-        request.open("POST", trackUrl);
-        request.send(JSON.stringify(body));
+        return telemetryData;
     }
 
     //--------------------------------------------------------------------------
@@ -311,7 +372,7 @@ Item {
 
                 if (versions.app_versions) {
                     versions.app_versions.forEach(function (appInfo) {
-                        if (appInfo.download_url > "" && (allVersions || compareVersions(appInfo.version, appVersion) > 0)) {
+                        if (appInfo.download_url > "" && (allVersions || compareVersions(appInfo.shortversion, appVersion) > 0)) {
                             updates.push(appInfo);
                         }
                     });
@@ -354,7 +415,7 @@ Item {
 
         var result = 0;
 
-        for (i = 0; i < maxParts; i++) {
+        for (i = 0; i < maxParts && result == 0; i++) {
             if (Number(ver1[i]) > Number(ver2[i])) {
                 result = 1;
             } else if (Number(ver1[i]) < Number(ver2[i])) {
@@ -375,7 +436,6 @@ Item {
         if (!readyCheck(arguments.callee.name, true)) {
             return;
         }
-
 
         if (!parameters) {
             parameters = {};
